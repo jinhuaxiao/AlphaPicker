@@ -34,3 +34,25 @@ export function compactNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return `${n}`;
 }
+
+const AMZ_TLD: Record<string, string> = {
+  US: "com", UK: "co.uk", GB: "co.uk", DE: "de", FR: "fr", IT: "it", ES: "es",
+  JP: "co.jp", CA: "ca", MX: "com.mx", AU: "com.au", IN: "in", NL: "nl",
+};
+
+/**
+ * Original platform listing URL derived from the id:
+ *  - eBay items are stored as `EB<legacyItemId>` → ebay.com/itm/<id>
+ *  - real Amazon ASINs (10 chars) → amazon.<tld>/dp/<asin> by target market
+ * Returns null for manual/draft/synthetic ids (no real listing).
+ */
+export function platformUrl(asin: string, targetMarket = ""): string | null {
+  const ebay = /^EB(\d{6,})$/.exec(asin);
+  if (ebay) return `https://www.ebay.com/itm/${ebay[1]}`;
+  if (/^[A-Z0-9]{10}$/.test(asin)) {
+    const market = targetMarket.replace(/amazon/i, "").trim().toUpperCase() || "US";
+    const tld = AMZ_TLD[market] ?? "com";
+    return `https://www.amazon.${tld}/dp/${asin}`;
+  }
+  return null;
+}

@@ -216,7 +216,45 @@ export function NewEvaluationForm() {
   const [f, setF] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [recognizing, setRecognizing] = useState(false);
+  const [aiNote, setAiNote] = useState<string | null>(null);
   const set = (k: keyof FormState) => (v: string) => setF((s) => ({ ...s, [k]: v }));
+
+  // Upload a product image → Qwen-VL recognises it → auto-fill the form.
+  async function onImage(dataUrl: string) {
+    setF((s) => ({ ...s, image_url: dataUrl }));
+    setAiNote(null);
+    if (!dataUrl) return;
+    setRecognizing(true);
+    setErr(null);
+    try {
+      const r = await fetch("/api/vision", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "识别失败");
+      setF((s) => ({
+        ...s,
+        name: d.name || s.name,
+        category_path: d.category_path || s.category_path,
+        target_market: d.target_market || s.target_market,
+        main_keyword: d.main_keyword || s.main_keyword,
+        secondary_count: Array.isArray(d.secondary_keywords) && d.secondary_keywords.length
+          ? String(d.secondary_keywords.length)
+          : s.secondary_count,
+        price_usd: d.est_price_usd ? String(d.est_price_usd) : s.price_usd,
+      }));
+      setAiNote(
+        `✓ AI 识别：${d.name}（置信度 ${(Number(d.confidence) * 100).toFixed(0)}% · ${d.model}）。经济参数请补全或点「一键填充示例」。`,
+      );
+    } catch (e) {
+      setErr(`图片识别失败：${(e as Error).message}`);
+    } finally {
+      setRecognizing(false);
+    }
+  }
 
   async function submit(draft: boolean) {
     setBusy(true);
@@ -271,8 +309,22 @@ export function NewEvaluationForm() {
       <div className="mt-7 grid gap-7 md:grid-cols-3">
         {/* ① 产品基础 */}
         <div className="space-y-4">
-          <div className="font-serif text-[16px] text-blue">① 产品基础</div>
-          <ImageDrop value={f.image_url} onChange={set("image_url")} onError={setErr} />
+          <div className="flex items-center justify-between">
+            <div className="font-serif text-[16px] text-blue">① 产品基础</div>
+            <span className="rounded-full border border-blue/30 bg-blue-soft px-2 py-0.5 text-[11px] text-blue">
+              上传图片 · AI 识别填表
+            </span>
+          </div>
+          <ImageDrop value={f.image_url} onChange={onImage} onError={setErr} />
+          {recognizing ? (
+            <div className="rounded-lg border border-blue/30 bg-blue-soft/60 px-3 py-2 text-[13px] text-blue">
+              ✨ 通义千问视觉识别中…
+            </div>
+          ) : aiNote ? (
+            <div className="rounded-lg border border-green/30 bg-green-soft/60 px-3 py-2 text-[12px] text-green">
+              {aiNote}
+            </div>
+          ) : null}
           <Field label="ASIN / SKU" value={f.asin} onChange={set("asin")} placeholder="B0XXXXXXXX" />
           <Field label="产品名" value={f.name} onChange={set("name")} placeholder="Slow Feeder Dog Bowl" />
           <Field label="类目" value={f.category_path} onChange={set("category_path")} placeholder="Pet › Bowls" />

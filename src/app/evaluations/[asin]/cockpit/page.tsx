@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ScoreGauge, MiniGauge } from "@/components/charts/ScoreGauge";
-import { getEvaluationByAsin, pnlInputsFor } from "@/lib/queries";
+import { getEvaluationByAsin, getSeller, getReviewInsight, pnlInputsFor } from "@/lib/queries";
 import { acosSafety } from "@/lib/economics";
+import { runAlpha } from "@/lib/alpha";
+import { toVocPainPoints } from "@/lib/reviews";
 import { clamp } from "@/lib/scoring";
 import { compactNumber, usd, signedPt } from "@/lib/format";
 
@@ -15,14 +17,23 @@ export default async function CockpitPage({
 }) {
   const { asin } = await params;
   const e = await getEvaluationByAsin(asin);
-  if (!e) notFound();
+  const seller = await getSeller();
+  if (!e || !seller) notFound();
 
   const s = e.scores;
   const rawComp = 100 - s.competition;
   const safety = acosSafety(pnlInputsFor(e)).safetyPt;
   const acosScore = clamp(Math.round(50 + safety * 2));
-  const percentile = Math.min(95, Math.max(50, e.composite - 4));
-  const vsAvg = Math.max(2, e.composite - 66);
+
+  // One decision number, app-wide: the live opportunity index.
+  const reviewInsight = e.status !== "draft" ? await getReviewInsight(seller.id, e.asin) : null;
+  const vocOverride = reviewInsight?.painPoints.length
+    ? toVocPainPoints(reviewInsight.painPoints)
+    : undefined;
+  const alpha = e.status !== "draft" ? runAlpha(e, seller, [], {}, vocOverride) : null;
+  const idx = alpha ? alpha.opportunityIndex : e.composite;
+  const percentile = Math.min(95, Math.max(50, Math.round(idx) - 4));
+  const vsAvg = Math.max(2, Math.round(idx) - 66);
 
   const feed = [
     ["14:22:07", `拉取 ASIN ${e.asin}`, "ok"],
@@ -32,7 +43,7 @@ export default async function CockpitPage({
     ["14:22:11", `退货率基线 ${e.return_rate_pct}%`, "ok"],
     ["14:22:12", "三场景模拟完成", "ok"],
     ["14:22:13", "ACOS 敏感性分析", "ok"],
-    ["14:22:14", `综合评分 ${e.composite} · ${e.status === "recommend" ? "推荐" : e.status === "watch" ? "观望" : "不建议"}`, "score"],
+    ["14:22:14", `机会指数 ${idx} · ${alpha ? alpha.decision.levelLabel : "草稿"}`, "score"],
     ["14:22:14", "关键词排名扫描 73%", "pending"],
   ] as const;
 
@@ -46,19 +57,27 @@ export default async function CockpitPage({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        {/* big gauge */}
+        {/* big gauge — opportunity index */}
         <div className="flex flex-col items-center justify-center rounded-xl border border-line bg-panel p-6 shadow-card">
-          <div className="text-[14px] text-muted">综合评分</div>
-          <ScoreGauge value={e.composite} />
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] text-muted">机会指数</span>
+            {alpha ? (
+              <span className="rounded-full border border-line bg-panel-2 px-2 py-0.5 text-[11px] text-muted">{alpha.decision.levelLabel}</span>
+            ) : null}
+          </div>
+          <ScoreGauge value={idx} />
           <div className="mt-2 text-center text-[13px] text-muted">
             超过类目 {percentile}% 候选
-            <div className="text-green">↑ {vsAvg}pt vs 类目均值</div>
+            <div className="text-green">↑ {vsAvg}pt vs 类目均值 · 经典综合分 {e.composite}（辅助）</div>
           </div>
         </div>
 
-        {/* 6 mini gauges */}
+        {/* 6 mini gauges — auxiliary 5-dim detail */}
         <div className="rounded-xl border border-line bg-panel p-5 shadow-card">
-          <div className="text-[14px] font-medium text-muted">仪表盘 · 6 维实时</div>
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] font-medium text-muted">仪表盘 · 6 维实时</span>
+            <span className="rounded-full border border-line bg-panel-2 px-2 py-0.5 text-[11px] text-muted">辅助</span>
+          </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <MiniGauge label="需求规模" value={s.demand} caption={`${compactNumber(e.monthly_search)}/mo`} tone="green" />
             <MiniGauge label="竞争压力" value={rawComp} caption={`Top3 集中 ${e.top3_concentration}%`} tone="red" />

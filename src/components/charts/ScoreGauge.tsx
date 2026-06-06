@@ -39,7 +39,7 @@ export function ScoreGauge({
         strokeLinecap="round"
       />
       <path
-        d={arc(sx, sy, vx, vy, frac > 0.5 ? 1 : 0)}
+        d={arc(sx, sy, vx, vy, 0)}
         fill="none"
         stroke={color}
         strokeWidth={stroke}
