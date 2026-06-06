@@ -156,7 +156,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="mt-7 grid gap-2 sm:grid-cols-3">
+            <div className="mt-7 hidden gap-2 sm:grid sm:grid-cols-3">
               {metrics.map((item) => (
                 <div key={item.label} className="rounded-lg border border-line bg-paper p-3">
                   <div className="text-[12px] text-muted">{item.label}</div>
@@ -179,7 +179,7 @@ export default function Home() {
                 />
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-4">
               {signals.map((item) => (
                 <div
                   key={item.label}

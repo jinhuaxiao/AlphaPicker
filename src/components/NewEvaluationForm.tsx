@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface FormState {
   asin: string;
   name: string;
+  image_url: string;
   category_path: string;
   target_market: string;
   price_usd: string;
@@ -25,6 +26,7 @@ interface FormState {
 const EMPTY: FormState = {
   asin: "",
   name: "",
+  image_url: "",
   category_path: "",
   target_market: "Amazon US",
   price_usd: "",
@@ -44,6 +46,7 @@ const EMPTY: FormState = {
 const DEMO: FormState = {
   asin: "B0DEMO" + Math.floor(Math.random() * 1e6),
   name: "Slow Feeder Dog Bowl",
+  image_url: "",
   category_path: "Pet › Bowls",
   target_market: "Amazon US",
   price_usd: "15.99",
@@ -59,6 +62,113 @@ const DEMO: FormState = {
   est_acos_pct: "22",
   conversion_pct: "8",
 };
+
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // 4MB — keep data URL within a sane TEXT size
+
+function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("仅支持图片文件"));
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      reject(new Error("图片过大（上限 4MB）"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("读取图片失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function ImageDrop({
+  value,
+  onChange,
+  onError,
+}: {
+  value: string;
+  onChange: (dataUrl: string) => void;
+  onError: (msg: string | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  async function accept(file: File | undefined | null) {
+    if (!file) return;
+    try {
+      onError(null);
+      onChange(await readImageFile(file));
+    } catch (e) {
+      onError((e as Error).message);
+    }
+  }
+
+  return (
+    <div
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        void accept(e.dataTransfer.files?.[0]);
+      }}
+      onPaste={(e) => {
+        const file = Array.from(e.clipboardData.items)
+          .find((i) => i.type.startsWith("image/"))
+          ?.getAsFile();
+        if (file) void accept(file);
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
+      className={`relative flex h-32 cursor-pointer items-center justify-center overflow-hidden rounded-lg border bg-panel-2 text-center text-muted transition-colors ${
+        dragging ? "border-blue bg-blue-soft text-blue" : "border-line hover:border-ink"
+      }`}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          void accept(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+      {value ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="产品图" className="h-full w-full object-contain" />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange("");
+              onError(null);
+            }}
+            className="absolute right-1.5 top-1.5 rounded-full bg-ink/70 px-2 py-0.5 text-[12px] text-white hover:bg-ink"
+          >
+            移除
+          </button>
+        </>
+      ) : (
+        <span className="px-3 text-[14px]">
+          {dragging ? "松开以上传" : "产品图 / 拖入 · 点击 · 粘贴"}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function Field({
   label,
@@ -162,9 +272,7 @@ export function NewEvaluationForm() {
         {/* ① 产品基础 */}
         <div className="space-y-4">
           <div className="font-serif text-[16px] text-blue">① 产品基础</div>
-          <div className="flex h-32 items-center justify-center rounded-lg border border-line bg-panel-2 text-muted">
-            产品图 / 拖入
-          </div>
+          <ImageDrop value={f.image_url} onChange={set("image_url")} onError={setErr} />
           <Field label="ASIN / SKU" value={f.asin} onChange={set("asin")} placeholder="B0XXXXXXXX" />
           <Field label="产品名" value={f.name} onChange={set("name")} placeholder="Slow Feeder Dog Bowl" />
           <Field label="类目" value={f.category_path} onChange={set("category_path")} placeholder="Pet › Bowls" />

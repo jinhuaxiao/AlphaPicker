@@ -79,17 +79,18 @@ export async function POST(req: Request) {
   try {
     const res = await pool.query(
       `INSERT INTO evaluations (
-        seller_id, asin, name, category_path, target_market,
+        seller_id, asin, name, image_url, category_path, target_market,
         price_usd, cost_cny, freight_cny, fba_fee_usd, commission_pct, coupon_pct, return_rate_pct,
         main_keyword, secondary_keywords, target_monthly_units, est_acos_pct, conversion_pct,
         score_demand, score_competition, score_profit, score_differentiation, score_risk,
         composite, status, monthly_search, weighted_cpc, top3_concentration, gross_margin_pct)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
       RETURNING asin`,
       [
         seller.id,
         asin,
         b.name || "未命名产品",
+        b.image_url || null,
         b.category_path || "",
         b.target_market || "Amazon US",
         price,
