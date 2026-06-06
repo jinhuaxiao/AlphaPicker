@@ -54,9 +54,8 @@ const signals = [
 
 function BrandMark() {
   return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue/20 bg-blue-soft text-[14px] font-bold text-blue">
-      AP
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/logo-mark.png" alt="AlphaPicker" className="h-9 w-9 object-contain" />
   );
 }
 

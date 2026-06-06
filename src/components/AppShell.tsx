@@ -90,10 +90,8 @@ export function AppShell({
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-panel md:flex">
         <div className="flex h-14 items-center gap-2 border-b border-line px-5">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M12 3 L21 20 H3 Z" stroke="var(--color-blue)" strokeWidth="1.8" />
-            <circle cx="12" cy="14" r="2.4" fill="var(--color-blue)" />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.png" alt="" aria-hidden className="h-6 w-6 object-contain" />
           <span className="text-[17px] font-semibold tracking-tight">AlphaPicker</span>
         </div>
 
