@@ -46,6 +46,10 @@ function Icon({ name }: { name: string }) {
       return (
         <svg {...common}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" /></svg>
       );
+    case "compass":
+      return (
+        <svg {...common}><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2 5-5 2 2-5 5-2z" /></svg>
+      );
     default:
       return null;
   }
@@ -72,6 +76,7 @@ export function AppShell({
     featuredAsin ? `/evaluations/${featuredAsin}/${key}` : "/dashboard";
   const NAV = [
     { key: "dashboard", label: "我的选品", href: "/dashboard", icon: "grid" },
+    { key: "discover", label: "市场机会", href: "/discover", icon: "compass" },
     { key: "recommend", label: "智能推荐", href: "/recommend", icon: "spark" },
     { key: "new", label: "新建评估", href: "/evaluations/new", icon: "plus" },
     { key: "sandbox", label: "沙盘模拟", href: productHref("sandbox"), icon: "scatter" },

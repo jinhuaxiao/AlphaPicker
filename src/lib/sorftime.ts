@@ -395,3 +395,126 @@ export async function competitorProductKeywords(
     })
     .filter((k) => k.keyword);
 }
+
+/* ─────────────────── market opportunity discovery ───────────────────── */
+
+export interface CategoryFilters {
+  month_sales_volume_min?: number;
+  month_sales_volume_max?: number;
+  price_min?: number;
+  price_max?: number;
+  ratings_max?: number;
+  top3Product_sales_share_max?: number; // 0-1
+  amazonOwned_sales_share_max?: number; // 0-1
+  newproduct_sales_share_min?: number; // 0-1
+  seasonal_popular_product?: string; // month name | "Both"
+  page?: number;
+  amzSite?: string;
+}
+
+export interface CategoryOpportunity {
+  nodeId: string;
+  name: string;
+  tamUnits: number;
+  tamRevenueUsd: number;
+  avgStar: number;
+  avgReviews: number;
+  avgPrice: number;
+  season: string;
+  top3ProductShare: number;
+  top3BrandShare: number;
+  top3SellerShare: number;
+  newProductShare: number;
+  chinaSellerShare: number;
+  amazonOwnedShare: number;
+}
+
+/** Broad multi-constraint subcategory search — for blue-ocean discovery. */
+export async function searchCategories(
+  filters: CategoryFilters = {},
+): Promise<CategoryOpportunity[]> {
+  const { amzSite = "US", ...rest } = filters;
+  const data = (await callTool("search_categories_broadly", {
+    amzSite,
+    ...rest,
+  })) as Record<string, unknown>[];
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((r) => ({
+      nodeId: String(r["nodeid"] ?? ""),
+      name: String(r["类目名称"] ?? ""),
+      tamUnits: firstNumber(String(r["Top100产品月销量"] ?? "0")),
+      tamRevenueUsd: firstNumber(String(r["Top100产品月销额"] ?? "0")),
+      avgStar: firstNumber(String(r["平均星级"] ?? "0")),
+      avgReviews: firstNumber(String(r["平均评价数量"] ?? "0")),
+      avgPrice: firstNumber(String(r["平均价格"] ?? "0")),
+      season: String(r["旺季"] ?? ""),
+      top3ProductShare: firstNumber(String(r["销量前3的产品月销量占比"] ?? "0")),
+      top3BrandShare: firstNumber(String(r["销量前3的品牌月销量占比"] ?? "0")),
+      top3SellerShare: firstNumber(String(r["销量前3的卖家月销量占比"] ?? "0")),
+      newProductShare: firstNumber(String(r["上线3个月内的新品销量占比"] ?? "0")),
+      chinaSellerShare: firstNumber(String(r["中国卖家占比"] ?? "0")),
+      amazonOwnedShare: firstNumber(String(r["亚马逊自营月销量占比"] ?? "0")),
+    }))
+    .filter((c) => c.nodeId);
+}
+
+export interface PotentialFilters {
+  searchName?: string;
+  price_min?: number;
+  price_max?: number;
+  month_sales_volume_min?: number;
+  month_sales_volume_max?: number;
+  delivery_type?: string; // Both | FBM | FBA
+  page?: number;
+  amzSite?: string;
+}
+
+export interface PotentialProduct {
+  asin: string;
+  title: string;
+  brand: string;
+  image: string;
+  price: number;
+  monthlyUnits: number;
+  monthlyRevenue: number;
+  star: number;
+  reviews: number;
+  fulfillment: string;
+  potentialIndex: number;
+  listedDate: string;
+  fbaFee: number;
+  category: string;
+  subcategory: string;
+}
+
+/** Search Amazon for "potential" products by price / sales / fulfillment. */
+export async function potentialProducts(
+  filters: PotentialFilters = {},
+): Promise<PotentialProduct[]> {
+  const { amzSite = "US", ...rest } = filters;
+  const data = (await callTool("potential_product", {
+    amzSite,
+    ...rest,
+  })) as Record<string, unknown>[];
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((r) => ({
+      asin: String(r["产品ASIN码"] ?? ""),
+      title: String(r["标题"] ?? ""),
+      brand: String(r["品牌"] ?? ""),
+      image: String(r["主图"] ?? ""),
+      price: Number(r["价格"] ?? 0),
+      monthlyUnits: firstNumber(String(r["月销量"] ?? "0")),
+      monthlyRevenue: firstNumber(String(r["月销额"] ?? "0")),
+      star: firstNumber(String(r["星级"] ?? "0")),
+      reviews: firstNumber(String(r["评论数"] ?? "0")),
+      fulfillment: String(r["发货方式"] ?? ""),
+      potentialIndex: firstNumber(String(r["产品潜力指数"] ?? "0")),
+      listedDate: String(r["上架时间"] ?? "").trim(),
+      fbaFee: firstNumber(String(r["FBA费用"] ?? "0")),
+      category: String(r["所属大类"] ?? "").replace(/（.*$/, "").trim(),
+      subcategory: String(r["所属细分类目"] ?? "").replace(/（.*$/, "").trim(),
+    }))
+    .filter((p) => p.asin);
+}
