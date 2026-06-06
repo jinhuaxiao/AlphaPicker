@@ -151,7 +151,7 @@ export function AppShell({
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex min-h-[64px] items-center justify-between gap-4 bg-panel/80 backdrop-blur-md border-b border-line px-6 py-2 shadow-sm">
+        <header className="sticky top-0 z-30 flex min-h-[64px] items-center justify-between gap-3 bg-panel/80 backdrop-blur-md border-b border-line px-4 py-2 shadow-sm sm:gap-4 sm:px-6">
           <div className="min-w-0 flex-1">
             {breadcrumb ? (
               <div className="text-[13px] text-muted mb-1 flex items-center gap-2">
@@ -164,8 +164,8 @@ export function AppShell({
           </div>
           <div className="flex items-center gap-4 shrink-0">
             {actions}
-            <div className="flex items-center gap-3 text-muted border-l border-line pl-4 ml-2">
-              <button className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-soft to-purple-50 px-3 py-1.5 text-[13px] font-medium text-blue transition hover:shadow-sm hover:opacity-90 border border-blue/10">
+            <div className="flex items-center gap-2 text-muted border-l border-line pl-3 ml-1 sm:gap-3 sm:pl-4 sm:ml-2">
+              <button className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-soft to-purple-50 px-3 py-1.5 text-[13px] font-medium text-blue transition hover:shadow-sm hover:opacity-90 border border-blue/10 sm:flex">
                 <Icon name="spark" />
                 升级套餐
               </button>
@@ -180,14 +180,14 @@ export function AppShell({
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue to-blue-strong text-[12px] font-medium text-white shadow-sm">
                   {seller.name.slice(0, 1)}
                 </div>
-                <span className="text-[13px] font-medium text-ink">{seller.name}</span>
+                <span className="hidden text-[13px] font-medium text-ink sm:inline">{seller.name}</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-muted"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 px-6 py-6">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6">{children}</main>
       </div>
 
       {/* Right rail · AlphaPilot agent (follows page context) */}

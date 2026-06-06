@@ -98,18 +98,19 @@ export default async function DashboardPage() {
       active="dashboard"
       featuredAsin={evals.find((e) => e.status !== "draft")?.asin}
     >
-      <div className="relative -mt-6 -mx-6 px-6 pt-10 pb-8 bg-gradient-to-br from-blue-soft/50 via-white to-purple-50/50">
-        <div className="flex items-center justify-between mb-8">
+      <div className="relative -mx-4 -mt-4 px-4 pt-8 pb-6 bg-gradient-to-br from-blue-soft/50 via-white to-purple-50/50 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-10 sm:pb-8">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-ink">Hi, {seller.name} 团队 👋</h1>
-            <p className="mt-2 text-[15px] text-muted">欢迎回来！以下是你团队的选品决策概览</p>
+            <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">Hi, {seller.name} 团队 👋</h1>
+            <p className="mt-2 text-[14px] text-muted sm:text-[15px]">欢迎回来！以下是你团队的选品决策概览</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-2 text-[14px] font-medium text-ink transition hover:bg-panel-2">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-[13px] font-medium text-ink transition hover:bg-panel-2 sm:flex-none sm:px-4 sm:text-[14px]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              导出数据
+              <span className="hidden sm:inline">导出数据</span>
+              <span className="sm:hidden">导出</span>
             </button>
-            <Link href="/evaluations/new" className="flex items-center gap-2 rounded-lg bg-blue px-4 py-2 text-[14px] font-medium text-white transition hover:bg-blue-strong shadow-sm">
+            <Link href="/evaluations/new" className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue px-3 py-2 text-[13px] font-medium text-white transition hover:bg-blue-strong shadow-sm sm:flex-none sm:px-4 sm:text-[14px]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
               新建评估
             </Link>
@@ -118,7 +119,7 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           {/* Radar Chart Card */}
-          <div className="relative rounded-2xl border border-white/60 bg-white/60 p-6 shadow-sm backdrop-blur-md overflow-hidden group min-h-[480px] flex flex-col">
+          <div className="relative flex min-h-[360px] flex-col overflow-hidden rounded-2xl border border-white/60 bg-white/60 p-4 shadow-sm backdrop-blur-md group sm:min-h-[420px] sm:p-6 lg:min-h-[480px]">
             <style>{`
               @keyframes scan {
                 0% { top: 0; opacity: 0; }
@@ -275,8 +276,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-xl border border-line bg-panel p-5 shadow-card flex items-center gap-4">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+        <div className="flex items-center gap-4 rounded-xl border border-line bg-panel p-4 shadow-card sm:p-5">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-soft text-blue">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
           </div>
@@ -289,7 +290,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-panel p-5 shadow-card flex items-center gap-4">
+        <div className="flex items-center gap-4 rounded-xl border border-line bg-panel p-4 shadow-card sm:p-5">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50 text-purple-600">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"></path></svg>
           </div>
@@ -302,7 +303,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-panel p-5 shadow-card flex items-center gap-4">
+        <div className="flex items-center gap-4 rounded-xl border border-line bg-panel p-4 shadow-card sm:p-5">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-soft text-blue">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
           </div>
@@ -315,7 +316,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-panel p-5 shadow-card flex items-center gap-4">
+        <div className="flex items-center gap-4 rounded-xl border border-line bg-panel p-4 shadow-card sm:p-5">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-soft text-blue">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           </div>
