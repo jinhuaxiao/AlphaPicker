@@ -10,7 +10,8 @@
     "lint": "next lint",
     "db:migrate": "tsx db/migrate.ts",
     "db:seed": "tsx db/seed.ts",
-    "db:reset": "tsx db/migrate.ts && tsx db/seed.ts"
+    "db:reset": "tsx db/migrate.ts && tsx db/seed.ts",
+    "db:backfill": "tsx db/backfill-insights.ts"
   },
   "dependencies": {
     "next": "15.1.6",
