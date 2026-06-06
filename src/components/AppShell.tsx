@@ -82,8 +82,6 @@ export function AppShell({
     { key: "sandbox", label: "沙盘模拟", href: productHref("sandbox"), icon: "scatter" },
     { key: "keywords", label: "关键词库", href: productHref("keywords"), icon: "keyword" },
     { key: "profile", label: "卖家画像", href: "/profile", icon: "profile" },
-    { key: "templates", label: "模板", href: "/dashboard", icon: "template" },
-    { key: "team", label: "团队", href: "/dashboard", icon: "users" },
   ];
   return (
     <div className="flex min-h-screen">
@@ -112,24 +110,37 @@ export function AppShell({
           ))}
         </nav>
 
-        <div className="border-t border-line p-3">
-          <div className="flex items-center gap-3 rounded-lg p-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-soft text-[14px] font-semibold text-blue">
-              {seller.name.slice(0, 1)}
+        <div className="border-t border-line p-5">
+          <div className="rounded-xl bg-panel-2/50 p-4">
+            <div className="flex items-center gap-2 text-[13px] text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-blue"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              评估额度
             </div>
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-medium">{seller.name}</div>
-              <div className="truncate text-[12px] text-muted">
-                {seller.plan} · {seller.eval_quota_used}/{seller.eval_quota_total}
-              </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="font-mono text-2xl font-bold text-ink">{seller.eval_quota_used}</span>
+              <span className="text-[14px] text-muted">/ {seller.eval_quota_total}</span>
             </div>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-line">
+              <div 
+                className="h-full rounded-full bg-blue" 
+                style={{ width: `${(seller.eval_quota_used / seller.eval_quota_total) * 100}%` }}
+              />
+            </div>
+            <div className="mt-3 text-[12px] text-muted">
+              重置时间: 2025-06-23
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button className="text-muted hover:text-ink transition">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+            </button>
           </div>
         </div>
       </aside>
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b border-line bg-panel/90 px-6 backdrop-blur">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 bg-transparent px-6">
           <div className="min-w-0">
             {breadcrumb ? (
               <div className="text-[12px] text-muted">{breadcrumb}</div>
@@ -138,7 +149,28 @@ export function AppShell({
               <h1 className="truncate text-[16px] font-semibold leading-tight">{title}</h1>
             ) : null}
           </div>
-          <div className="flex items-center gap-3">{actions}</div>
+          <div className="flex items-center gap-4">
+            {actions}
+            <div className="flex items-center gap-3 text-muted">
+              <button className="flex items-center gap-1.5 rounded-full bg-blue-soft px-3 py-1.5 text-[13px] font-medium text-blue transition hover:bg-blue-soft/80">
+                <Icon name="spark" />
+                升级套餐
+              </button>
+              <button className="hover:text-ink transition">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+              </button>
+              <button className="hover:text-ink transition">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              </button>
+              <div className="ml-2 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-panel-2 text-[12px] font-medium">
+                  {seller.name.slice(0, 1)}
+                </div>
+                <span className="text-[13px] font-medium text-ink">{seller.name}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+            </div>
+          </div>
         </header>
 
         <main className="flex-1 px-6 py-6">{children}</main>
