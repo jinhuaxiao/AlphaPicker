@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env
+.env*.local
+npm-debug.log*
+*.tsbuildinfo
+docs
+AlphaPicker-Wireframes.pptx
+.DS_Store

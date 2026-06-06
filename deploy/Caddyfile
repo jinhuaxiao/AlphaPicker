@@ -1,0 +1,6 @@
+# Automatic HTTPS via Let's Encrypt. Requires the domain's public A record to
+# point at this server and ports 80/443 to be free.
+alphapicker.manualstool.com {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

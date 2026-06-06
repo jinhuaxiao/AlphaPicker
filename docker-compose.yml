@@ -1,0 +1,65 @@
+# AlphaPicker — single-VM deployment.
+#
+#   cp deploy/.env.example .env        # fill in real keys
+#   docker compose up -d --build       # app + postgres (app on 127.0.0.1:3000)
+#
+# TLS / domain — pick ONE:
+#   A) server already has nginx/another proxy → use deploy/nginx-alphapicker.conf
+#   B) ports 80/443 are free → `docker compose --profile caddy up -d` (auto HTTPS)
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: alphapicker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alphapicker}
+      POSTGRES_DB: alphapicker
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alphapicker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://alphapicker:${POSTGRES_PASSWORD:-alphapicker}@db:5432/alphapicker
+      SORFTIME_MCP_URL: ${SORFTIME_MCP_URL:-https://mcp.sorftime.com}
+      SORFTIME_KEY: ${SORFTIME_KEY:-}
+      EBAY_APPID: ${EBAY_APPID:-}
+      EBAY_CERTID: ${EBAY_CERTID:-}
+      EBAY_DEVID: ${EBAY_DEVID:-}
+      EBAY_AUTHTOKEN: ${EBAY_AUTHTOKEN:-}
+      TIMEZONE: ${TIMEZONE:-Asia/Shanghai}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      PORT: "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Bind to localhost only — a reverse proxy (nginx/caddy) sits in front.
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+  # Optional: only if host ports 80/443 are free. Gives automatic Let's Encrypt TLS.
+  caddy:
+    image: caddy:2
+    profiles: ["caddy"]
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
