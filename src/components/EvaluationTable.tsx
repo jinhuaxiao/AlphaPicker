@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/Badge";
 import type { EvaluationStatus } from "@/lib/types";
-import { signedPt, relativeTime } from "@/lib/format";
+import { signedPt, relativeTime, platformUrl } from "@/lib/format";
 
 export type RowKind = "recommend" | "watch" | "avoid" | "draft";
 
@@ -13,6 +13,7 @@ export type EvaluationRow = {
   asin: string;
   name: string;
   image_url: string | null;
+  target_market: string;
   category_path: string;
   created_at: string;
   status: EvaluationStatus;
@@ -181,12 +182,24 @@ export function EvaluationTable({
                 </td>
                 <td className="px-5 py-3.5 text-muted">
                   <div className="flex items-center gap-3">
-                    <button className="hover:text-ink transition">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    </button>
-                    <button className="hover:text-ink transition">
+                    {platformUrl(r.asin, r.target_market) ? (
+                      <a
+                        href={platformUrl(r.asin, r.target_market)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="打开真实商品页"
+                        className="hover:text-blue transition"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      </a>
+                    ) : (
+                      <span title="无真实商品链接（手动/草稿录入）" className="cursor-not-allowed text-muted/30">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      </span>
+                    )}
+                    <Link href={`/evaluations/${r.asin}/decision`} title="查看评估详情" className="hover:text-ink transition">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                    </button>
+                    </Link>
                   </div>
                 </td>
               </tr>

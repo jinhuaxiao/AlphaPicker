@@ -66,6 +66,7 @@ export default async function DashboardPage() {
     asin: e.asin,
     name: e.name,
     image_url: e.image_url,
+    target_market: e.target_market,
     category_path: e.category_path,
     created_at: e.created_at,
     status: e.status,
