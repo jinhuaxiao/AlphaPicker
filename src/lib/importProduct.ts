@@ -15,7 +15,7 @@ import {
 import { acosSafety } from "./economics";
 import { ebayMarket } from "./ebay";
 import { analyzeReviews, saveReviewInsight } from "./reviews";
-import { analyzeMarket, saveMarketInsight, categoryTop3Share } from "./market";
+import { analyzeMarket, saveMarketInsight, categoryTop3Share, categoryTamUnits } from "./market";
 import { analyzeKeywords, saveKeywordInsight } from "./keywords";
 import type { Seller } from "./types";
 
@@ -73,6 +73,7 @@ export async function importByAsin(
     ? await categoryReport(detail.nodeId, site).catch(() => null)
     : null;
   const top3 = categoryTop3Share(report) ?? 55;
+  const tamUnits = categoryTamUnits(report); // 0 when unavailable → demand falls back to search-only
 
   const price = detail.price;
   const fba = detail.fbaFee || Number((price * 0.28).toFixed(2));
@@ -128,6 +129,7 @@ export async function importByAsin(
 
   const scores = deriveScores({
     monthlySearch: headSearch || 1000,
+    tamUnits,
     top3Concentration: top3,
     grossMarginPct: grossMargin,
     unfilledSellingPoints: clamp(Math.round(5 - detail.star), 1, 5),
@@ -150,8 +152,8 @@ export async function importByAsin(
         price_usd, cost_cny, freight_cny, fba_fee_usd, commission_pct, coupon_pct, return_rate_pct,
         main_keyword, secondary_keywords, target_monthly_units, est_acos_pct, conversion_pct,
         score_demand, score_competition, score_profit, score_differentiation, score_risk,
-        composite, status, monthly_search, weighted_cpc, top3_concentration, gross_margin_pct, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29, now())
+        composite, status, monthly_search, weighted_cpc, top3_concentration, gross_margin_pct, tam_units, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30, now())
      ON CONFLICT (seller_id, asin) DO UPDATE SET
         name=EXCLUDED.name, category_path=EXCLUDED.category_path, image_url=EXCLUDED.image_url,
         price_usd=EXCLUDED.price_usd, cost_cny=EXCLUDED.cost_cny, freight_cny=EXCLUDED.freight_cny,
@@ -163,14 +165,14 @@ export async function importByAsin(
         score_risk=EXCLUDED.score_risk, composite=EXCLUDED.composite, status=EXCLUDED.status,
         monthly_search=EXCLUDED.monthly_search, weighted_cpc=EXCLUDED.weighted_cpc,
         top3_concentration=EXCLUDED.top3_concentration, gross_margin_pct=EXCLUDED.gross_margin_pct,
-        updated_at=now()
+        tam_units=EXCLUDED.tam_units, updated_at=now()
      RETURNING id`,
     [
       seller.id, detail.asin || asin, name, categoryPath, `Amazon ${site}`, detail.image || null,
       price, costCny, freightCny, fba, 15, 0, returnRate,
       mainKw, secondary, targetUnits, estAcos, conversion,
       scores.demand, scores.competition, scores.profit, scores.differentiation, scores.risk,
-      composite, status, headSearch, wcpc, top3, grossMargin,
+      composite, status, headSearch, wcpc, top3, grossMargin, tamUnits,
     ] as never[],
   );
   const evalId = res.rows[0].id as number;

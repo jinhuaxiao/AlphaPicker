@@ -44,6 +44,12 @@ export function categoryTop3Share(report: CategoryReport | null): number | null 
   return v > 0 ? Math.round(v) : null;
 }
 
+/** Market capacity (Top100 monthly units) straight from the category stats block. */
+export function categoryTamUnits(report: CategoryReport | null): number {
+  if (!report) return 0;
+  return Math.round(lastNum(report.stats["top100产品月销量"]));
+}
+
 function trendStats(series: TrendPoint[]): { growthYoyPct: number; peakMonth: string } {
   if (series.length < 2) return { growthYoyPct: 0, peakMonth: "" };
   const vals = series.map((p) => p.value);

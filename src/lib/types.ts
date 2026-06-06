@@ -61,6 +61,7 @@ export interface Evaluation {
 
   // Headline metrics surfaced on the scorecard
   monthly_search: number; // 月搜索
+  tam_units: number; // 类目 Top100 月销量 (market capacity); 0 if unknown
   weighted_cpc: number; // 加权 CPC
   top3_concentration: number; // 头部 3 家集中度 (%)
   gross_margin_pct: number; // 毛利率

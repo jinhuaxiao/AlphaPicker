@@ -59,8 +59,27 @@ export function statusFromComposite(
   return "watch";
 }
 
+/**
+ * 需求规模 (0-100). Blends keyword search demand (primary signal) with real
+ * category capacity (TAM = Top100 monthly units) when available. A single
+ * keyword's search volume alone is narrow; TAM grounds it in the actual market
+ * size. Mapping (log-scaled): 50k searches/mo → 100; 2M units/mo → 100.
+ * With TAM present: 0.6·search + 0.4·TAM. Without TAM: search only (back-compat).
+ */
+export function demandScore(monthlySearch: number, tamUnits = 0): number {
+  const search = clamp(
+    Math.round((Math.log10(Math.max(monthlySearch, 1)) / Math.log10(50000)) * 100),
+  );
+  if (tamUnits <= 0) return search;
+  const tam = clamp(
+    Math.round((Math.log10(Math.max(tamUnits, 1)) / Math.log10(2_000_000)) * 100),
+  );
+  return clamp(Math.round(search * 0.6 + tam * 0.4));
+}
+
 export interface ScoringInputs {
   monthlySearch: number; // 月搜索
+  tamUnits?: number; // 类目 Top100 月销量 (market capacity); optional
   top3Concentration: number; // 头部 3 家集中度 %
   grossMarginPct: number; // 毛利率
   unfilledSellingPoints: number; // 未填补卖点数 (0-5)
@@ -73,8 +92,8 @@ export interface ScoringInputs {
  * Each axis maps a signal onto a 0-100 "higher = better" scale.
  */
 export function deriveScores(input: ScoringInputs): DimensionScores {
-  // 需求规模: log-scaled monthly search, ~18k/mo lands around 80.
-  const demand = clamp(Math.round((Math.log10(Math.max(input.monthlySearch, 1)) / Math.log10(50000)) * 100));
+  // 需求规模: keyword search blended with real category capacity (TAM).
+  const demand = demandScore(input.monthlySearch, input.tamUnits ?? 0);
 
   // 竞争 (favorability): lower head concentration = friendlier. 68% concentration -> ~60.
   const competition = clamp(Math.round(100 - (input.top3Concentration - 20) * 1.25));

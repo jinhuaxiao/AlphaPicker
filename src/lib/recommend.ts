@@ -139,6 +139,7 @@ function toEvaluation(
     composite: 0,
     status: "draft",
     monthly_search: item.monthlyUnits, // Amazon monthly sales as the demand proxy
+    tam_units: 0,
     weighted_cpc: wcpc,
     top3_concentration: top3,
     gross_margin_pct: grossMargin,

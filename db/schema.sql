@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS evaluations (
   UNIQUE (seller_id, asin)
 );
 
+-- Real category capacity (Top100 monthly units) feeding the demand score.
+ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS tam_units BIGINT NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS keywords (
   id              SERIAL PRIMARY KEY,
   evaluation_id   INTEGER NOT NULL REFERENCES evaluations(id) ON DELETE CASCADE,

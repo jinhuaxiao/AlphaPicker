@@ -9,6 +9,7 @@
 // seller confirms VOC pain points.
 
 import { computePnl, type PnlInputs } from "./economics";
+import { demandScore as computeDemandScore } from "./scoring";
 import type { Evaluation, Keyword, Seller, ExperienceLevel } from "./types";
 
 const round = (n: number, d = 0) => Math.round(n * 10 ** d) / 10 ** d;
@@ -121,11 +122,8 @@ export function analyzeMarketOpportunity(
   keywords: Keyword[],
   policy: SellerPolicy,
 ): MarketOpportunity {
-  const demandScore = clamp(
-    Math.round((Math.log10(Math.max(e.monthly_search, 1)) / Math.log10(50000)) * 100),
-    0,
-    100,
-  );
+  // Keyword search demand blended with real category capacity (TAM) when known.
+  const demandScore = computeDemandScore(e.monthly_search, e.tam_units);
   // Long-tail room = traffic not locked up by the concentrated head.
   const longTailRoom = clamp(round(100 - e.top3_concentration), 0, 100);
   void keywords;

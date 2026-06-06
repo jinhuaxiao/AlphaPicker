@@ -75,6 +75,7 @@ interface EvalRow {
   composite: number;
   status: string;
   monthly_search: number;
+  tam_units: string;
   weighted_cpc: string;
   top3_concentration: string;
   gross_margin_pct: string;
@@ -113,6 +114,7 @@ function mapEval(r: EvalRow): Evaluation {
     composite: r.composite,
     status: r.status as EvaluationStatus,
     monthly_search: r.monthly_search,
+    tam_units: Number(r.tam_units ?? 0),
     weighted_cpc: Number(r.weighted_cpc),
     top3_concentration: Number(r.top3_concentration),
     gross_margin_pct: Number(r.gross_margin_pct),
