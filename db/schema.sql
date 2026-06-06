@@ -70,5 +70,23 @@ CREATE TABLE IF NOT EXISTS keywords (
   position        INTEGER NOT NULL DEFAULT 0
 );
 
+-- Real Amazon review VOC analysis, computed server-side from product_reviews
+-- (Sorftime) at import time. Stores only the derived insight, never raw reviews.
+CREATE TABLE IF NOT EXISTS review_insights (
+  id            SERIAL PRIMARY KEY,
+  seller_id     INTEGER NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  asin          TEXT NOT NULL,
+  amz_site      TEXT NOT NULL DEFAULT 'US',
+  review_count  INTEGER NOT NULL DEFAULT 0,
+  pos_count     INTEGER NOT NULL DEFAULT 0,
+  neg_count     INTEGER NOT NULL DEFAULT 0,
+  avg_star      NUMERIC NOT NULL DEFAULT 0,
+  neg_ratio_pct NUMERIC NOT NULL DEFAULT 0,
+  pain_points   JSONB   NOT NULL DEFAULT '[]',
+  fetched_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (seller_id, asin, amz_site)
+);
+
 CREATE INDEX IF NOT EXISTS idx_evaluations_seller ON evaluations(seller_id);
 CREATE INDEX IF NOT EXISTS idx_keywords_eval ON keywords(evaluation_id);
+CREATE INDEX IF NOT EXISTS idx_review_insights_lookup ON review_insights(seller_id, asin, amz_site);

@@ -1,4 +1,5 @@
 import { query, queryOne } from "./db";
+import type { ReviewInsight, ReviewPainPoint } from "./reviews";
 import type {
   Evaluation,
   EvaluationStatus,
@@ -169,6 +170,37 @@ export async function getKeywords(evaluationId: number): Promise<Keyword[]> {
     traffic_share_pct: Number(r.traffic_share_pct),
     position: r.position,
   }));
+}
+
+interface ReviewInsightRow {
+  review_count: number;
+  pos_count: number;
+  neg_count: number;
+  avg_star: string;
+  neg_ratio_pct: string;
+  pain_points: ReviewPainPoint[];
+}
+
+/** Latest persisted review VOC insight for an ASIN (Amazon products only). */
+export async function getReviewInsight(
+  sellerId: number,
+  asin: string,
+): Promise<ReviewInsight | null> {
+  const row = await queryOne<ReviewInsightRow>(
+    `SELECT * FROM review_insights
+       WHERE seller_id = $1 AND asin = $2
+       ORDER BY fetched_at DESC LIMIT 1`,
+    [sellerId, asin],
+  );
+  if (!row) return null;
+  return {
+    reviewCount: row.review_count,
+    posCount: row.pos_count,
+    negCount: row.neg_count,
+    avgStar: Number(row.avg_star),
+    negRatioPct: Number(row.neg_ratio_pct),
+    painPoints: row.pain_points ?? [],
+  };
 }
 
 export function pnlInputsFor(e: Evaluation) {

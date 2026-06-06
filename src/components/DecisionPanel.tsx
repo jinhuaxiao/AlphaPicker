@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { runAlpha, type Solvable, type DecisionLevel } from "@/lib/alpha";
+import { useRouter } from "next/navigation";
+import {
+  runAlpha,
+  type Solvable,
+  type DecisionLevel,
+  type VocPainPoint,
+} from "@/lib/alpha";
+import type { ReviewInsight } from "@/lib/reviews";
 import type { Evaluation, Keyword, Seller } from "@/lib/types";
 import { cny, pct, signedPt } from "@/lib/format";
 
@@ -38,22 +45,58 @@ export function DecisionPanel({
   evaluation,
   seller,
   keywords,
+  reviewInsight,
 }: {
   evaluation: Evaluation;
   seller: Seller;
   keywords: Keyword[];
+  reviewInsight?: ReviewInsight | null;
 }) {
+  const router = useRouter();
   const [conf, setConf] = useState<Record<string, Solvable>>({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Real review-derived pain points override the regex VOC fallback in runAlpha.
+  const vocOverride = useMemo<VocPainPoint[] | undefined>(
+    () =>
+      reviewInsight?.painPoints.length
+        ? reviewInsight.painPoints.map((p) => ({
+            id: p.id,
+            point: p.point,
+            severity: p.severity,
+            evidence: p.evidence,
+            supplierSolvable: null,
+          }))
+        : undefined,
+    [reviewInsight],
+  );
+
   const r = useMemo(
-    () => runAlpha(evaluation, seller, keywords, conf),
-    [evaluation, seller, keywords, conf],
+    () => runAlpha(evaluation, seller, keywords, conf, vocOverride),
+    [evaluation, seller, keywords, conf, vocOverride],
   );
 
   const tone = LEVEL_TONE[r.decision.level];
   const m = r.multipliers;
+  const hasRealReviews = !!reviewInsight && reviewInsight.reviewCount > 0;
 
   const setVoc = (id: string, v: Solvable) =>
     setConf((c) => ({ ...c, [id]: c[id] === v ? null : v }));
+
+  async function refreshReviews() {
+    setRefreshing(true);
+    try {
+      const site = evaluation.target_market.replace(/^Amazon\s+/i, "").trim() || "US";
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ asin: evaluation.asin, site }),
+      });
+      if (res.ok) router.refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -138,11 +181,49 @@ export function DecisionPanel({
 
       {/* VOC human-in-loop */}
       <div className="rounded-xl border border-line bg-panel p-5 shadow-card">
-        <div className="flex items-center gap-2">
-          <span className="text-[14px] font-semibold">VOC 痛点 · 人机确认闭环</span>
-          <span className="rounded-full border border-blue/30 bg-blue-soft px-2 py-0.5 text-[11px] text-blue">AI 建议 · 需卖家确认</span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] font-semibold">VOC 痛点 · 人机确认闭环</span>
+            <span className={`rounded-full border px-2 py-0.5 text-[11px] ${
+              hasRealReviews ? "border-green/40 bg-green-soft text-green" : "border-blue/30 bg-blue-soft text-blue"
+            }`}>
+              {hasRealReviews ? "真实差评聚类 · 需卖家确认" : "AI 建议 · 需卖家确认"}
+            </span>
+          </div>
+          {evaluation.asin.startsWith("EB") ? null : (
+            <button
+              onClick={refreshReviews}
+              disabled={refreshing}
+              className="rounded-md border border-line px-2.5 py-1 text-[12px] text-muted hover:bg-panel-2 disabled:opacity-60"
+            >
+              {refreshing ? "分析中…" : "重新分析评论"}
+            </button>
+          )}
         </div>
-        <p className="mt-1 text-[13px] text-muted">确认供应商能否解决，直接影响机会指数（VOC 系数）。</p>
+
+        {/* 评论洞察 — real review summary */}
+        {hasRealReviews ? (
+          <div className="mt-3 flex flex-wrap gap-2 text-[13px]">
+            <span className="rounded-lg border border-line bg-panel-2 px-2.5 py-1">
+              分析评论 <span className="font-mono font-semibold">{reviewInsight!.reviewCount}</span> 条
+            </span>
+            <span className="rounded-lg border border-line bg-panel-2 px-2.5 py-1">
+              平均 <span className="font-mono font-semibold">{reviewInsight!.avgStar.toFixed(1)}</span>★
+            </span>
+            <span className={`rounded-lg border px-2.5 py-1 ${
+              reviewInsight!.negRatioPct >= 25 ? "border-orange/40 bg-orange-soft text-orange" : "border-line bg-panel-2"
+            }`}>
+              差评占比 <span className="font-mono font-semibold">{reviewInsight!.negRatioPct}%</span>
+              <span className="text-muted"> · {reviewInsight!.negCount} 条</span>
+            </span>
+          </div>
+        ) : null}
+
+        <p className="mt-2 text-[13px] text-muted">
+          {hasRealReviews
+            ? "痛点由 Sorftime 拉取的真实差评聚类得出，附原文佐证。确认供应商能否解决，直接影响机会指数（VOC 系数）。"
+            : "确认供应商能否解决，直接影响机会指数（VOC 系数）。"}
+        </p>
         <div className="mt-3 space-y-2">
           {r.voc.map((v) => (
             <div key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line p-3">

@@ -373,7 +373,9 @@ export function generateDecisionAndWarnings(
         ? "整体成立，按标准测试仓位进入并观察前 2 周表现。"
         : level === "observe_or_micro_test"
           ? "谨慎小批量测试，不建议直接重仓。"
-          : "硬性门槛或盈利结构不成立，不建议占用备货资金。";
+          : !opportunity.gatePass
+            ? "硬性门槛未过（市场需求 / TACOS 盈利 / 垄断风险其一不成立），不建议占用备货资金。"
+            : "硬门槛虽过，但综合机会指数偏低，建议暂不进入或仅做极小批量验证。";
 
   const reasoning: string[] = [];
   reasoning.push(
@@ -473,14 +475,16 @@ export function runAlpha(
   seller: Seller,
   keywords: Keyword[],
   confirmations: Record<string, Solvable> = {},
+  vocOverride?: VocPainPoint[],
 ): AlphaResult {
   const policy = buildSellerPolicy(seller);
   const finance = calculateBlendedFinanceWithTacos(e, policy);
   const market = analyzeMarketOpportunity(e, keywords, policy);
-  const voc = collectSellerConfirmationForVoc(
-    extractVocPainPointsWithAI(e),
-    confirmations,
-  );
+  // Real review-derived pain points when available (Amazon ASINs); otherwise the
+  // category-pattern fallback for eBay/manual products with no review data.
+  const baseVoc =
+    vocOverride && vocOverride.length ? vocOverride : extractVocPainPointsWithAI(e);
+  const voc = collectSellerConfirmationForVoc(baseVoc, confirmations);
   const opp = calculateOpportunityIndex(market, finance, policy, voc, e.category_path);
   const { decision, dynamicWarnings } = generateDecisionAndWarnings(opp, finance, market, policy, voc);
 

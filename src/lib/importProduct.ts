@@ -14,6 +14,7 @@ import {
 } from "./scoring";
 import { acosSafety } from "./economics";
 import { ebayMarket } from "./ebay";
+import { analyzeReviews, saveReviewInsight } from "./reviews";
 import type { Seller } from "./types";
 
 const FX = 7.2;
@@ -183,6 +184,14 @@ export async function importByAsin(
         top1pct, top3pct, Math.round((t.monthlySearch / totalVol) * 100), pos++,
       ] as never[],
     );
+  }
+
+  // Real review VOC — best effort; a review failure must never block scoring.
+  try {
+    const insight = await analyzeReviews(detail.asin || asin, site);
+    if (insight) await saveReviewInsight(seller.id, detail.asin || asin, site, insight);
+  } catch (err) {
+    console.warn(`review analysis failed for ${asin}:`, (err as Error).message);
   }
 
   return {

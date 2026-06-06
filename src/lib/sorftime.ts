@@ -205,6 +205,35 @@ export async function trafficTerms(
     .filter((t) => t.keyword);
 }
 
+export interface AmazonReview {
+  date: string; // yyyyMMdd
+  star: number;
+  title: string;
+  body: string;
+  attrs: string; // variation attributes, e.g. "Flavor Name=Chicken;Pattern Name=Large"
+}
+
+/** Up to ~100 of a product's reviews from the last year. */
+export async function productReviews(
+  asin: string,
+  site = "US",
+  reviewType: "Both" | "Positive" | "Negative" = "Both",
+): Promise<AmazonReview[]> {
+  const data = (await callTool("product_reviews", {
+    asin,
+    amzSite: site,
+    reviewType,
+  })) as Record<string, unknown>[];
+  if (!Array.isArray(data)) return [];
+  return data.map((r) => ({
+    date: String(r["评论日期"] ?? ""),
+    star: firstNumber(String(r["评星"] ?? "0")),
+    title: String(r["标题"] ?? ""),
+    body: String(r["评论"] ?? ""),
+    attrs: String(r["评论产品的属性"] ?? ""),
+  }));
+}
+
 /** Top3 sales concentration (%) within the subcategory Top100. */
 export async function top3Concentration(
   nodeId: string,
