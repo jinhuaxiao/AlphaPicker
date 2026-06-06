@@ -113,7 +113,27 @@ CREATE TABLE IF NOT EXISTS market_insights (
   UNIQUE (seller_id, asin, amz_site)
 );
 
+-- Keyword demand-breadth + competitor traffic-coverage gap, from Sorftime
+-- category_keywords, keyword_extends and competitor_product_keywords.
+CREATE TABLE IF NOT EXISTS keyword_insights (
+  id                   SERIAL PRIMARY KEY,
+  seller_id            INTEGER NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  asin                 TEXT NOT NULL,
+  amz_site             TEXT NOT NULL DEFAULT 'US',
+  breadth_search_total BIGINT NOT NULL DEFAULT 0,  -- total monthly search across core keywords
+  coverage_score       NUMERIC NOT NULL DEFAULT 0, -- % of core keywords ranked on page 1
+  page1_count          INTEGER NOT NULL DEFAULT 0,
+  gap_count            INTEGER NOT NULL DEFAULT 0,
+  core_keywords        JSONB NOT NULL DEFAULT '[]', -- [{keyword, monthlySearch, cpc, results, season}]
+  longtail             JSONB NOT NULL DEFAULT '[]', -- [{keyword, monthlySearch, cpc, season}]
+  coverage             JSONB NOT NULL DEFAULT '[]', -- [{keyword, monthlySearch, page, slot}]
+  gaps                 JSONB NOT NULL DEFAULT '[]', -- [{keyword, monthlySearch, cpc}]
+  fetched_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (seller_id, asin, amz_site)
+);
+
 CREATE INDEX IF NOT EXISTS idx_evaluations_seller ON evaluations(seller_id);
 CREATE INDEX IF NOT EXISTS idx_keywords_eval ON keywords(evaluation_id);
 CREATE INDEX IF NOT EXISTS idx_review_insights_lookup ON review_insights(seller_id, asin, amz_site);
 CREATE INDEX IF NOT EXISTS idx_market_insights_lookup ON market_insights(seller_id, asin, amz_site);
+CREATE INDEX IF NOT EXISTS idx_keyword_insights_lookup ON keyword_insights(seller_id, asin, amz_site);

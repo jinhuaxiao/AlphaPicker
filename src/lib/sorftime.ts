@@ -294,3 +294,104 @@ export async function productTrend(
   const t = await callTool("product_trend", { asin, productTrendType, amzSite: site });
   return parseYmSeries(typeof t === "string" ? t : JSON.stringify(t));
 }
+
+export interface CoreKeyword {
+  keyword: string;
+  monthlySearch: number;
+  cpc: number;
+  results: number; // number of search results — breadth of competition
+  season: string; // 搜索量旺季
+}
+
+/** A subcategory's core/head keyword universe (demand breadth). */
+export async function categoryKeywords(
+  nodeId: string,
+  site = "US",
+  page = 1,
+): Promise<CoreKeyword[]> {
+  if (!nodeId) return [];
+  const data = (await callTool("category_keywords", {
+    nodeId,
+    amzSite: site,
+    page,
+  })) as Record<string, unknown>[];
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((r) => ({
+      keyword: String(r["关键词"] ?? ""),
+      monthlySearch: firstNumber(String(r["月搜索量"] ?? "0")),
+      cpc: firstNumber(String(r["cpc精准竞价"] ?? "0")),
+      results: firstNumber(String(r["搜索结果数"] ?? "0")),
+      season: String(r["搜索量旺季"] ?? "").replace(/^搜索量旺季[:：]?/, ""),
+    }))
+    .filter((k) => k.keyword);
+}
+
+export interface LongTailKeyword {
+  keyword: string;
+  monthlySearch: number;
+  cpc: number;
+  season: string;
+}
+
+/** Long-tail / related keyword expansion from a seed term. */
+export async function keywordExtends(
+  keyword: string,
+  site = "US",
+  page = 1,
+): Promise<LongTailKeyword[]> {
+  if (!keyword) return [];
+  const data = (await callTool("keyword_extends", {
+    keyword,
+    keywordSupportSite: site,
+    page,
+  })) as Record<string, unknown>[];
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((r) => ({
+      keyword: String(r["关键词"] ?? ""),
+      monthlySearch: firstNumber(String(r["月搜索量"] ?? "0")),
+      cpc: firstNumber(String(r["cpc推荐竞价"] ?? "0")),
+      season: String(r["季节性"] ?? "").replace(/^搜索量旺季[:：]?/, ""),
+    }))
+    .filter((k) => k.keyword);
+}
+
+export interface CoverageKeyword {
+  keyword: string;
+  monthlySearch: number;
+  page: number; // natural-rank page (0 = unknown)
+  slot: number; // position within the page (0 = unknown)
+}
+
+/** Parse "第1页，第6/50位" → { page: 1, slot: 6 }. */
+function parseExposure(s: string): { page: number; slot: number } {
+  const page = Number(/第\s*(\d+)\s*页/.exec(s)?.[1] ?? 0);
+  const slot = Number(/第\s*(\d+)\s*\/\s*\d+\s*位/.exec(s)?.[1] ?? 0);
+  return { page, slot };
+}
+
+/** The product's natural-rank exposure positions across core keywords. */
+export async function competitorProductKeywords(
+  asin: string,
+  site = "US",
+  page = 1,
+): Promise<CoverageKeyword[]> {
+  const data = (await callTool("competitor_product_keywords", {
+    asin,
+    keywordSupportSite: site,
+    page,
+  })) as Record<string, unknown>[];
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((r) => {
+      const { page: pg, slot } = parseExposure(String(r["曝光位置"] ?? ""));
+      return {
+        keyword: String(r["关键词"] ?? ""),
+        monthlySearch: firstNumber(String(r["关键词月搜索量"] ?? "0")),
+        page: pg,
+        slot,
+      };
+    })
+    .filter((k) => k.keyword);
+}

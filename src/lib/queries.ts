@@ -1,7 +1,13 @@
 import { query, queryOne } from "./db";
 import type { ReviewInsight, ReviewPainPoint } from "./reviews";
 import type { MarketInsight } from "./market";
-import type { TrendPoint } from "./sorftime";
+import type { KeywordInsight, KeywordGap } from "./keywords";
+import type {
+  TrendPoint,
+  CoreKeyword,
+  LongTailKeyword,
+  CoverageKeyword,
+} from "./sorftime";
 import type {
   Evaluation,
   EvaluationStatus,
@@ -251,6 +257,41 @@ export async function getMarketInsight(
     peakMonth: row.peak_month,
     categoryTrend: row.category_trend ?? [],
     productTrend: row.product_trend ?? [],
+  };
+}
+
+interface KeywordInsightRow {
+  breadth_search_total: string;
+  coverage_score: string;
+  page1_count: number;
+  gap_count: number;
+  core_keywords: CoreKeyword[];
+  longtail: LongTailKeyword[];
+  coverage: CoverageKeyword[];
+  gaps: KeywordGap[];
+}
+
+/** Latest persisted keyword breadth / traffic-gap insight for an ASIN. */
+export async function getKeywordInsight(
+  sellerId: number,
+  asin: string,
+): Promise<KeywordInsight | null> {
+  const row = await queryOne<KeywordInsightRow>(
+    `SELECT * FROM keyword_insights
+       WHERE seller_id = $1 AND asin = $2
+       ORDER BY fetched_at DESC LIMIT 1`,
+    [sellerId, asin],
+  );
+  if (!row) return null;
+  return {
+    breadthSearchTotal: Number(row.breadth_search_total),
+    coverageScore: Number(row.coverage_score),
+    page1Count: row.page1_count,
+    gapCount: row.gap_count,
+    coreKeywords: row.core_keywords ?? [],
+    longtail: row.longtail ?? [],
+    coverage: row.coverage ?? [],
+    gaps: row.gaps ?? [],
   };
 }
 

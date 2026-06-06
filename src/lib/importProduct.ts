@@ -16,6 +16,7 @@ import { acosSafety } from "./economics";
 import { ebayMarket } from "./ebay";
 import { analyzeReviews, saveReviewInsight } from "./reviews";
 import { analyzeMarket, saveMarketInsight, categoryTop3Share } from "./market";
+import { analyzeKeywords, saveKeywordInsight } from "./keywords";
 import type { Seller } from "./types";
 
 const FX = 7.2;
@@ -206,6 +207,14 @@ export async function importByAsin(
     if (mi) await saveMarketInsight(seller.id, detail.asin || asin, site, mi);
   } catch (err) {
     console.warn(`market analysis failed for ${asin}:`, (err as Error).message);
+  }
+
+  // Keyword breadth & competitor traffic-coverage gap — best effort.
+  try {
+    const ki = await analyzeKeywords(detail.asin || asin, detail.nodeId, mainKw, site);
+    if (ki) await saveKeywordInsight(seller.id, detail.asin || asin, site, ki);
+  } catch (err) {
+    console.warn(`keyword analysis failed for ${asin}:`, (err as Error).message);
   }
 
   return {

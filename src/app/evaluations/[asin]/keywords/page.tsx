@@ -2,7 +2,13 @@ import { notFound } from "next/navigation";
 import { Pill } from "@/components/Badge";
 import { Donut } from "@/components/charts/Donut";
 import { Histogram } from "@/components/charts/Bars";
-import { getEvaluationByAsin, getKeywords } from "@/lib/queries";
+import { KeywordGapCard } from "@/components/KeywordGapCard";
+import {
+  getEvaluationByAsin,
+  getKeywords,
+  getSeller,
+  getKeywordInsight,
+} from "@/lib/queries";
 import { usd, compactNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +28,8 @@ export default async function KeywordsPage({
   const e = await getEvaluationByAsin(asin);
   if (!e) notFound();
   const keywords = await getKeywords(e.id);
+  const seller = await getSeller();
+  const keywordInsight = seller ? await getKeywordInsight(seller.id, e.asin) : null;
 
   const main = keywords[0];
   const top1 = main?.top1_pct ?? Math.round(e.top3_concentration * 0.4);
@@ -129,6 +137,8 @@ export default async function KeywordsPage({
           </div>
         </div>
       </div>
+
+      {keywordInsight ? <KeywordGapCard ki={keywordInsight} /> : null}
     </div>
   );
 }
