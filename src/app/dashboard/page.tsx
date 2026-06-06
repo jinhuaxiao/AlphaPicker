@@ -75,6 +75,11 @@ export default async function DashboardPage() {
     levelLabel: alpha ? alpha.decision.levelLabel : null,
     levelTone: alpha ? LEVEL_TONE[alpha.decision.level] : null,
     safety,
+    // 市场规模 from the (TAM-blended) demand score; 竞争度 from head concentration.
+    marketSize: e.scores.demand >= 70 ? "大" : e.scores.demand >= 45 ? "中" : "小",
+    competition: e.top3_concentration >= 60 ? "高" : e.top3_concentration >= 40 ? "中" : "低",
+    targetUnits: e.target_monthly_units,
+    grossMarginPct: e.gross_margin_pct,
   }));
 
   const radarData = [

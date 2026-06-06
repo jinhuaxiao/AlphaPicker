@@ -22,6 +22,10 @@ export type EvaluationRow = {
   levelLabel: string | null;
   levelTone: string | null;
   safety: number | null;
+  marketSize: "大" | "中" | "小";
+  competition: "高" | "中" | "低";
+  targetUnits: number;
+  grossMarginPct: number;
 };
 
 const indexColor = (i: number) =>
@@ -95,7 +99,7 @@ export function EvaluationTable({
             </th>
             <th className="px-5 py-3 font-normal">类目</th>
             <th className="px-5 py-3 font-normal">机会指数 <svg className="inline w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 15l5-5 5 5"></path></svg></th>
-            <th className="px-5 py-3 font-normal">命中率</th>
+            <th className="px-5 py-3 font-normal">安全边际</th>
             <th className="px-5 py-3 font-normal">市场规模</th>
             <th className="px-5 py-3 font-normal">竞争度</th>
             <th className="px-5 py-3 text-right font-normal">预计月销</th>
@@ -148,28 +152,32 @@ export function EvaluationTable({
                 <td className={`px-5 py-3.5 font-mono text-[15px] font-bold ${r.opportunityIndex !== null ? indexColor(r.opportunityIndex) : "text-muted"}`}>
                   {r.opportunityIndex !== null ? r.opportunityIndex : "—"}
                 </td>
-                <td className="px-5 py-3.5 text-[13px] text-ink">
-                  100%
+                <td className={`px-5 py-3.5 font-mono text-[13px] ${r.safety === null ? "text-muted" : r.safety >= 0 ? "text-ink" : "text-red"}`}>
+                  {r.safety === null ? "—" : signedPt(r.safety)}
                 </td>
-                <td className="px-5 py-3.5 text-[13px] text-blue font-medium">
-                  大
+                <td className={`px-5 py-3.5 text-[13px] font-medium ${r.marketSize === "大" ? "text-blue" : r.marketSize === "中" ? "text-ink" : "text-muted"}`}>
+                  {r.marketSize}
                 </td>
-                <td className="px-5 py-3.5 text-[13px] text-orange font-medium">
-                  中
-                </td>
-                <td className="px-5 py-3.5 text-right font-mono text-[14px] text-ink">
-                  1,240
+                <td className={`px-5 py-3.5 text-[13px] font-medium ${r.competition === "高" ? "text-red" : r.competition === "中" ? "text-orange" : "text-green"}`}>
+                  {r.competition}
                 </td>
                 <td className="px-5 py-3.5 text-right font-mono text-[14px] text-ink">
-                  48%
+                  {r.targetUnits.toLocaleString()}
+                </td>
+                <td className="px-5 py-3.5 text-right font-mono text-[14px] text-ink">
+                  {r.grossMarginPct}%
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-soft px-2.5 py-0.5 text-[12px] font-medium text-green">
-                    可行
-                  </span>
+                  {r.level ? (
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[12px] font-medium ${r.levelTone}`}>
+                      {r.levelLabel}
+                    </span>
+                  ) : (
+                    <StatusBadge status={r.status} />
+                  )}
                 </td>
                 <td className="px-5 py-3.5 text-[13px] text-muted">
-                  2025-06-06
+                  {r.created_at.slice(0, 10)}
                 </td>
                 <td className="px-5 py-3.5 text-muted">
                   <div className="flex items-center gap-3">
