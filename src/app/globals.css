@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  /* Neutral SaaS surface system */
+  --color-paper: #f6f7f9; /* app canvas */
+  --color-paper-line: #eceef1;
+  --color-panel: #ffffff; /* card / surface */
+  --color-panel-2: #f3f4f6; /* subtle fills, track */
+  --color-ink: #111827; /* primary text */
+  --color-muted: #6b7280; /* secondary text */
+  --color-subtle: #9ca3af;
+  --color-line: #e5e7eb; /* borders */
+  --color-line-strong: #d1d5db;
+
+  /* Accent + semantic */
+  --color-blue: #4f46e5; /* indigo primary */
+  --color-blue-strong: #4338ca;
+  --color-blue-soft: #eef2ff;
+  --color-green: #15803d;
+  --color-green-soft: #dcfce7;
+  --color-orange: #b45309;
+  --color-orange-soft: #fef3c7;
+  --color-red: #b91c1c;
+  --color-red-soft: #fee2e2;
+
+  /* Headings now use a clean sans — no more brush serif */
+  --font-serif: "Inter", system-ui, -apple-system, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-sans: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04),
+    0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-pop: 0 10px 30px -12px rgba(16, 24, 40, 0.18);
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.tracking-widest-xs {
+  letter-spacing: 0.16em;
+}
+
+/* Range slider — clean SaaS look */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-line);
+  border-radius: 999px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--color-blue);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--color-blue);
+  cursor: pointer;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d8dadf;
+  border-radius: 999px;
+  border: 2px solid var(--color-paper);
+}

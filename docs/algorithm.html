@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>AlphaPicker 评估算法</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    color: #1f2430; font-size: 11.5px; line-height: 1.6; margin: 0;
+  }
+  h1 { font-size: 25px; margin: 0 0 2px; letter-spacing: -.3px; }
+  h2 {
+    font-size: 15px; margin: 22px 0 8px; padding: 7px 12px; border-radius: 7px;
+    background: #eef2ff; color: #3a40b8; border: 1px solid #d7dcfb;
+  }
+  h3 { font-size: 12.5px; margin: 14px 0 5px; color: #4338ca; }
+  p { margin: 5px 0; }
+  .muted { color: #6b7280; }
+  .lead { color: #4b5563; font-size: 12px; margin-top: 4px; }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  pre {
+    background: #f6f7fb; border: 1px solid #e6e8f0; border-radius: 7px;
+    padding: 9px 12px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px; line-height: 1.65; white-space: pre-wrap; margin: 7px 0; color: #20242e;
+  }
+  .kw { color: #4338ca; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10.8px; }
+  th, td { border: 1px solid #e6e8f0; padding: 5px 8px; text-align: left; }
+  th { background: #f6f7fb; font-weight: 600; }
+  td.n, th.n { text-align: right; font-family: ui-monospace, Menlo, monospace; }
+  .pipe { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 8px 0 2px; }
+  .pipe .step { background: #fff; border: 1px solid #d7dcfb; color: #3a40b8; border-radius: 999px; padding: 3px 10px; font-size: 10.5px; font-weight: 600; }
+  .pipe .arr { color: #9aa0b4; }
+  .badge { display: inline-block; border-radius: 5px; padding: 1px 6px; font-size: 10px; font-weight: 600; }
+  .g { background: #dcfce7; color: #15803d; } .b { background: #eef2ff; color: #4338ca; }
+  .o { background: #fef3c7; color: #b45309; } .r { background: #fee2e2; color: #b91c1c; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #1f2430; padding-bottom: 8px; margin-bottom: 6px; }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .tri { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 16px solid #4f46e5; }
+  .foot { margin-top: 18px; border-top: 1px solid #e6e8f0; padding-top: 7px; font-size: 9.5px; color: #9aa0b4; display: flex; justify-content: space-between; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .note { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 7px; padding: 7px 11px; font-size: 10.6px; color: #9a3412; margin: 8px 0; }
+  ul { margin: 4px 0; padding-left: 18px; } li { margin: 2px 0; }
+  .small { font-size: 10px; }
+</style>
+</head>
+<body>
+
+  <div class="head">
+    <div>
+      <div class="logo"><span class="tri"></span><h1>AlphaPicker 评估算法</h1></div>
+      <div class="lead">把跨境选品当作一次产品投资决策 · 算法说明书 v2</div>
+    </div>
+    <div class="muted small mono">Decision Algorithm Spec</div>
+  </div>
+
+  <p class="muted small">系统中并存两套算法：<b>① 主算法 — 机会决策算法 v2</b>（机会决策页 / 智能推荐使用）；<b>② 遗留 — 五维加权综合分</b>（评分卡 / 仪表盘的「综合分」）。下文以真实代码常量为准（<code>src/lib/alpha.ts</code>、<code>scoring.ts</code>、<code>economics.ts</code>）。</p>
+
+  <h2>一 · 主算法：机会决策算法 v2 <code class="small">src/lib/alpha.ts</code></h2>
+  <div class="pipe">
+    <span class="step">① 卖家策略</span><span class="arr">→</span>
+    <span class="step">② TACOS 财务底座</span><span class="arr">→</span>
+    <span class="step">③ 市场机会分</span><span class="arr">→</span>
+    <span class="step">④ 利润/风险/适配 三乘数</span><span class="arr">→</span>
+    <span class="step">⑤ VOC 人机确认</span><span class="arr">→</span>
+    <span class="step">⑥ 机会指数</span><span class="arr">→</span>
+    <span class="step">⑦ 决策 + 动态预案</span>
+  </div>
+  <p class="small muted">核心原则：不要让 AI 做客观判断、不要用伪精确分数包装不确定性 —— 用硬性门槛 + 真实利润底座 + 市场结构 + 人机确认闭环 + 竞品预案替代单一「评分 78 分」。</p>
+
+  <h3>① 卖家策略 buildSellerPolicy(seller)</h3>
+  <p class="small"><code>risk = risk_preference / 100</code>（0 保守 ~ 1 激进）；按经验取基线，再被风险偏好微调。</p>
+  <table>
+    <tr><th>经验</th><th class="n">目标净利率</th><th class="n">TACOS 安全下限</th><th class="n">需求门槛(月)</th><th class="n">测试预算占比</th></tr>
+    <tr><td>新手 novice</td><td class="n">12 − risk·3</td><td class="n">5 − risk·2</td><td class="n">8&thinsp;000</td><td class="n">0.20</td></tr>
+    <tr><td>进阶 intermediate</td><td class="n">10 − risk·3</td><td class="n">3 − risk·2</td><td class="n">5&thinsp;000</td><td class="n">0.30</td></tr>
+    <tr><td>资深 veteran</td><td class="n">8 − risk·3</td><td class="n">2 − risk·2</td><td class="n">3&thinsp;000</td><td class="n">0.40</td></tr>
+  </table>
+
+  <h3>② TACOS 财务底座 calculateBlendedFinanceWithTacos(e, policy)</h3>
+<pre>售前毛利率  grossMargin = (price − (price·15%佣金 + FBA) − 到岸成本) / price   <span class="muted">// 由真实/估算 COGS 反推</span>
+广告订单占比 paidShare   = clamp(0.3 + top3集中度/200, 0.3, 0.7)
+预估 TACOS  estTacos     = estACOS × paidShare                 <span class="muted">// 总广告成本占比（含自然单）</span>
+可承受 TACOS maxTacos    = grossMargin − 目标净利率
+<span class="kw">TACOS 安全边际</span>          = maxTacos − estTacos
+<span class="kw">TACOS 后净利率</span>          = grossMargin − estTacos
+<span class="kw">财务硬门槛</span> passesFinanceGate = (TACOS后净利率 &gt; 0)</pre>
+  <p class="small muted">单位经济来自 <code>computePnl()</code>：单件净贡献 = 净售价 − Amazon费 − 广告费 − 到岸成本；并给出盈亏临界 ACOS、回本周期、ROI = 月净利 / 备货资金。</p>
+
+  <h3>③ 市场机会 analyzeMarketOpportunity(e, policy)</h3>
+<pre>需求分   demand = clamp( log10(月搜索) / log10(50000) × 100 )
+长尾空间        = 100 − top3集中度
+竞争分   conc   = clamp( 100 − (top3 − 20) × 1.25 )
+<span class="kw">市场机会分</span> marketScore = demand×0.5 + conc×0.3 + 长尾×0.2
+<span class="kw">需求硬门槛</span> passesDemandGate = (月搜索 ≥ minMonthlySearch)</pre>
+
+  <h3>④⑤ VOC 痛点 · 人机确认闭环</h3>
+  <p class="small"><code>extractVocPainPointsWithAI()</code> 按品类聚类出痛点（严重度 <span class="badge r">高</span> <span class="badge o">中</span> <span class="badge b">低</span>，初始 <code>supplierSolvable = null</code>）；<code>collectSellerConfirmationForVoc()</code> 合并卖家「供应商可解决 / 无法解决」确认，直接进入 VOC 系数。<span class="muted">（当前为启发式 stub，可替换为真实 LLM 对评论做 VOC 抽取。）</span></p>
+
+  <h3>⑥ 机会指数 calculateOpportunityIndex</h3>
+  <p class="small"><b>硬性门槛（三项全过才 gatePass）：</b> 需求门槛 ∧ 财务门槛 ∧ <code>top3 ≤ 80%</code>。</p>
+<pre>利润乘数 = clamp(0.72 + TACOS后净利率/60, 0.72, 1.08)
+风险乘数 = clamp( (0.74 + TACOS安全/45 + (50−top3)/180) × (0.92 + risk×0.16), 0.65, 1.08 )
+卖家适配 = clamp( (类目命中?1.05:0.95) × 预算适配, 0.75, 1.10 )    <span class="muted">// 预算适配 = 资金需求≤预算?1:预算/资金需求</span>
+VOC 系数 = clamp( 1 − 未确认高危×0.06 − 无法解决×0.12, 0.55, 1 )
+
+structural = clamp( marketScore × 利润 × 风险 × 适配, 0, 100 )      <span class="muted">// 先夹到 100</span>
+<span class="kw">机会指数</span>   = structural × VOC系数                                <span class="muted">// 再乘 VOC，让人机确认真实拉动分数</span>
+若任一硬门槛未过 → 机会指数 = min(机会指数, 38)</pre>
+
+  <h3>⑦ 决策与动态预案 generateDecisionAndWarnings</h3>
+  <table>
+    <tr><th>条件</th><th>决策等级</th></tr>
+    <tr><td>任一硬门槛未过</td><td><span class="badge r">不建议进入 avoid</span></td></tr>
+    <tr><td>机会指数 ≥ 75</td><td><span class="badge g">建议进入·可正常仓位 enter_and_scale</span></td></tr>
+    <tr><td>62 ≤ 指数 &lt; 75</td><td><span class="badge b">建议进入·标准测试 enter</span></td></tr>
+    <tr><td>45 ≤ 指数 &lt; 62</td><td><span class="badge o">观望 / 小批量测试 observe_or_micro_test</span></td></tr>
+    <tr><td>指数 &lt; 45</td><td><span class="badge r">不建议进入 avoid</span></td></tr>
+  </table>
+  <p class="small">同时输出：决策理由 reasoning、<b>预算策略</b>（初始预算 = 预算×测试占比；首批数量按等级 50–500 units）、<b>关键词策略</b>（按 top3 集中度切长尾或主词）、<b>止损规则</b>（TACOS 超 <code>max(8, 可承受TACOS)</code>、退货率&gt;8%、核心词 CPC +20%、前 10 评论&lt;4.0★）、<b>竞品动态预案</b>（竞品上 20% coupon、CPC +20% 等触发→影响→应对）。</p>
+
+  <h2>二 · 遗留算法：五维加权综合分 <code class="small">src/lib/scoring.ts</code></h2>
+  <p class="small">仍计算并存入 <code>composite</code>，显示在评分卡 / 仪表盘的「综合分」。</p>
+  <div class="grid2">
+    <div>
+      <h3>五维（deriveScores，0–100）</h3>
+      <ul class="small">
+        <li>需求规模 ← 月搜索（log 缩放）</li>
+        <li>竞争 ← Top3 集中度（反转，越分散越高）</li>
+        <li>利润空间 ← 毛利率</li>
+        <li>差异化 ← 未填补卖点数</li>
+        <li>风险 ← 退货率 + ACOS 安全边际（反转）</li>
+      </ul>
+    </div>
+    <div>
+      <h3>按经验加权（%）</h3>
+      <table>
+        <tr><th>经验</th><th class="n">需求</th><th class="n">竞争</th><th class="n">利润</th><th class="n">差异</th><th class="n">风险</th></tr>
+        <tr><td>新手</td><td class="n">20</td><td class="n">25</td><td class="n">25</td><td class="n">10</td><td class="n">20</td></tr>
+        <tr><td>进阶</td><td class="n">25</td><td class="n">20</td><td class="n">25</td><td class="n">15</td><td class="n">15</td></tr>
+        <tr><td>资深</td><td class="n">30</td><td class="n">15</td><td class="n">25</td><td class="n">20</td><td class="n">10</td></tr>
+      </table>
+    </div>
+  </div>
+<pre>综合分 = Σ(维度分 × 权重) / Σ权重
+状态：综合分≥60 且 风险≥40 → 推荐；综合分&lt;45 或 风险&lt;30 → 不建议；否则 观望</pre>
+
+  <div class="note">数据来源：当前实时数据源为 <b>Sorftime MCP（Amazon）</b>与 <b>eBay Browse API</b>（互为备份）。毛利率由真实/估算 COGS 反推，使「利润评分」与「盈亏模拟」共用同一成本基准、结论一致。VOC 抽取当前为启发式占位，可接入真实 LLM。</div>
+
+  <div class="foot">
+    <span>AlphaPicker · 评估算法说明书 v2</span>
+    <span class="mono">alpha.ts · scoring.ts · economics.ts</span>
+  </div>
+
+</body>
+</html>
