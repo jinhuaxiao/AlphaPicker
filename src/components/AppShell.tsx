@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Seller } from "@/lib/types";
+import AgentPanel, { type AgentView } from "@/components/agent/AgentPanel";
 
 function Icon({ name }: { name: string }) {
   const common = {
@@ -74,6 +75,16 @@ export function AppShell({
 }) {
   const productHref = (key: string) =>
     featuredAsin ? `/evaluations/${featuredAsin}/${key}` : "/dashboard";
+  // Derive the agent's page context from the shell props so AlphaPilot follows
+  // whatever the seller is looking at.
+  const agentView: AgentView = featuredAsin
+    ? "decision"
+    : active === "recommend"
+      ? "recommend"
+      : active === "dashboard"
+        ? "dashboard"
+        : "other";
+  const agentLabel = typeof title === "string" ? title : undefined;
   const NAV = [
     { key: "dashboard", label: "我的选品", href: "/dashboard", icon: "grid" },
     { key: "discover", label: "市场机会", href: "/discover", icon: "compass" },
@@ -140,34 +151,37 @@ export function AppShell({
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 bg-transparent px-6">
-          <div className="min-w-0">
+        <header className="sticky top-0 z-30 flex min-h-[64px] items-center justify-between gap-4 bg-panel/80 backdrop-blur-md border-b border-line px-6 py-2 shadow-sm">
+          <div className="min-w-0 flex-1">
             {breadcrumb ? (
-              <div className="text-[12px] text-muted">{breadcrumb}</div>
+              <div className="text-[13px] text-muted mb-1 flex items-center gap-2">
+                {breadcrumb}
+              </div>
             ) : null}
             {title ? (
-              <h1 className="truncate text-[16px] font-semibold leading-tight">{title}</h1>
+              <h1 className="truncate text-[16px] font-semibold text-ink leading-relaxed tracking-tight">{title}</h1>
             ) : null}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             {actions}
-            <div className="flex items-center gap-3 text-muted">
-              <button className="flex items-center gap-1.5 rounded-full bg-blue-soft px-3 py-1.5 text-[13px] font-medium text-blue transition hover:bg-blue-soft/80">
+            <div className="flex items-center gap-3 text-muted border-l border-line pl-4 ml-2">
+              <button className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-soft to-purple-50 px-3 py-1.5 text-[13px] font-medium text-blue transition hover:shadow-sm hover:opacity-90 border border-blue/10">
                 <Icon name="spark" />
                 升级套餐
               </button>
-              <button className="hover:text-ink transition">
+              <button className="hover:text-blue transition p-1.5 rounded-full hover:bg-blue-soft">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
               </button>
-              <button className="hover:text-ink transition">
+              <button className="hover:text-blue transition p-1.5 rounded-full hover:bg-blue-soft relative">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-red ring-2 ring-panel"></span>
               </button>
-              <div className="ml-2 flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-panel-2 text-[12px] font-medium">
+              <div className="ml-1 flex items-center gap-2 cursor-pointer hover:bg-panel-2 p-1 pr-2 rounded-full transition border border-transparent hover:border-line">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue to-blue-strong text-[12px] font-medium text-white shadow-sm">
                   {seller.name.slice(0, 1)}
                 </div>
                 <span className="text-[13px] font-medium text-ink">{seller.name}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-muted"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </div>
             </div>
           </div>
@@ -175,6 +189,9 @@ export function AppShell({
 
         <main className="flex-1 px-6 py-6">{children}</main>
       </div>
+
+      {/* Right rail · AlphaPilot agent (follows page context) */}
+      <AgentPanel view={agentView} asin={featuredAsin} label={agentLabel} />
     </div>
   );
 }

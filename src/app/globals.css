@@ -98,3 +98,38 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 999px;
   border: 2px solid var(--color-paper);
 }
+
+/* AlphaPilot agent panel — streaming affordances */
+.ap-spin {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--color-line-strong);
+  border-top-color: var(--color-blue);
+  border-radius: 50%;
+  display: inline-block;
+  animation: ap-spin 0.7s linear infinite;
+}
+.ap-spin-sm {
+  width: 11px;
+  height: 11px;
+  border-width: 1.6px;
+}
+@keyframes ap-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ap-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--color-blue);
+  animation: ap-blink 1s step-end infinite;
+}
+@keyframes ap-blink {
+  50% {
+    opacity: 0;
+  }
+}
