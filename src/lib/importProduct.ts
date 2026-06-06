@@ -2,7 +2,7 @@ import { pool } from "./db";
 import {
   productDetail,
   trafficTerms,
-  top3Concentration,
+  categoryReport,
   searchProducts,
   type TrafficTerm,
 } from "./sorftime";
@@ -15,6 +15,7 @@ import {
 import { acosSafety } from "./economics";
 import { ebayMarket } from "./ebay";
 import { analyzeReviews, saveReviewInsight } from "./reviews";
+import { analyzeMarket, saveMarketInsight, categoryTop3Share } from "./market";
 import type { Seller } from "./types";
 
 const FX = 7.2;
@@ -65,7 +66,12 @@ export async function importByAsin(
     .sort((a, b) => b.monthlySearch - a.monthlySearch)
     .slice(0, 15);
 
-  const top3 = (await top3Concentration(detail.nodeId, site)) ?? 55;
+  // One category_report fetch powers both the concentration score and the
+  // market-capacity insight below (reused via `report`).
+  const report = detail.nodeId
+    ? await categoryReport(detail.nodeId, site).catch(() => null)
+    : null;
+  const top3 = categoryTop3Share(report) ?? 55;
 
   const price = detail.price;
   const fba = detail.fbaFee || Number((price * 0.28).toFixed(2));
@@ -192,6 +198,14 @@ export async function importByAsin(
     if (insight) await saveReviewInsight(seller.id, detail.asin || asin, site, insight);
   } catch (err) {
     console.warn(`review analysis failed for ${asin}:`, (err as Error).message);
+  }
+
+  // Real market capacity & trend — best effort; reuses the category_report above.
+  try {
+    const mi = await analyzeMarket(detail.asin || asin, detail.nodeId, site, report);
+    if (mi) await saveMarketInsight(seller.id, detail.asin || asin, site, mi);
+  } catch (err) {
+    console.warn(`market analysis failed for ${asin}:`, (err as Error).message);
   }
 
   return {

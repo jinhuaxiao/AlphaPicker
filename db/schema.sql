@@ -87,6 +87,33 @@ CREATE TABLE IF NOT EXISTS review_insights (
   UNIQUE (seller_id, asin, amz_site)
 );
 
+-- Real market capacity (TAM) + structure + trend, from Sorftime category_report
+-- (类目统计报告), category_trend and product_trend at import time.
+CREATE TABLE IF NOT EXISTS market_insights (
+  id                 SERIAL PRIMARY KEY,
+  seller_id          INTEGER NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  asin               TEXT NOT NULL,
+  amz_site           TEXT NOT NULL DEFAULT 'US',
+  node_id            TEXT NOT NULL DEFAULT '',
+  category_name      TEXT NOT NULL DEFAULT '',
+  tam_units          BIGINT NOT NULL DEFAULT 0,   -- Top100 monthly units (market capacity proxy)
+  tam_revenue_usd    NUMERIC NOT NULL DEFAULT 0,  -- Top100 monthly revenue
+  top3_product_share NUMERIC NOT NULL DEFAULT 0,
+  top3_brand_share   NUMERIC NOT NULL DEFAULT 0,
+  top3_seller_share  NUMERIC NOT NULL DEFAULT 0,
+  amazon_owned_share NUMERIC NOT NULL DEFAULT 0,  -- Amazon-self-operated sales share (entry risk)
+  avg_price          NUMERIC NOT NULL DEFAULT 0,
+  median_price       NUMERIC NOT NULL DEFAULT 0,
+  high_reviews_share NUMERIC NOT NULL DEFAULT 0,  -- % sales from >1000-review products (review moat)
+  growth_yoy_pct     NUMERIC NOT NULL DEFAULT 0,
+  peak_month         TEXT NOT NULL DEFAULT '',    -- seasonality peak
+  category_trend     JSONB NOT NULL DEFAULT '[]', -- [{month, value}] category monthly sales
+  product_trend      JSONB NOT NULL DEFAULT '[]', -- [{month, value}] this product's monthly sales
+  fetched_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (seller_id, asin, amz_site)
+);
+
 CREATE INDEX IF NOT EXISTS idx_evaluations_seller ON evaluations(seller_id);
 CREATE INDEX IF NOT EXISTS idx_keywords_eval ON keywords(evaluation_id);
 CREATE INDEX IF NOT EXISTS idx_review_insights_lookup ON review_insights(seller_id, asin, amz_site);
+CREATE INDEX IF NOT EXISTS idx_market_insights_lookup ON market_insights(seller_id, asin, amz_site);

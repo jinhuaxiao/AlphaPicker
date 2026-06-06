@@ -234,25 +234,63 @@ export async function productReviews(
   }));
 }
 
-/** Top3 sales concentration (%) within the subcategory Top100. */
-export async function top3Concentration(
+export interface CategoryReport {
+  /** Raw 类目统计报告 key→value strings (capacity, concentration, prices, review moat). */
+  stats: Record<string, string>;
+  /** Top100 products in the subcategory. */
+  top100: Record<string, unknown>[];
+}
+
+/** Full category Top100 report incl. the 类目统计报告 market-structure block. */
+export async function categoryReport(
   nodeId: string,
   site = "US",
-): Promise<number | null> {
+): Promise<CategoryReport | null> {
   if (!nodeId) return null;
-  try {
-    const data = (await callTool("category_report", {
-      nodeId,
-      amzSite: site,
-    })) as { Top100产品?: Record<string, unknown>[] };
-    const list = data?.Top100产品 ?? [];
-    if (!Array.isArray(list) || list.length === 0) return null;
-    const sales = list.map((p) => firstNumber(String(p["月销量"]))).sort((a, b) => b - a);
-    const total = sales.reduce((a, b) => a + b, 0);
-    if (!total) return null;
-    const top3 = sales.slice(0, 3).reduce((a, b) => a + b, 0);
-    return Math.round((top3 / total) * 100);
-  } catch {
-    return null;
+  const data = (await callTool("category_report", { nodeId, amzSite: site })) as {
+    Top100产品?: Record<string, unknown>[];
+    类目统计报告?: Record<string, string>;
+  };
+  if (!data || typeof data !== "object") return null;
+  return {
+    stats: data["类目统计报告"] ?? {},
+    top100: Array.isArray(data["Top100产品"]) ? data["Top100产品"] : [],
+  };
+}
+
+export interface TrendPoint {
+  month: string; // YYYY-MM
+  value: number;
+}
+
+/** Parse Sorftime "YYYY年MM月=value" trend payloads (text or stringified). */
+function parseYmSeries(text: string): TrendPoint[] {
+  const out: TrendPoint[] = [];
+  const re = /(\d{4})年(\d{1,2})月\s*=\s*(-?\d+(?:\.\d+)?)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    out.push({ month: `${m[1]}-${m[2].padStart(2, "0")}`, value: Number(m[3]) });
   }
+  return out;
+}
+
+/** Category market trend (default: monthly Top100 sales count) over ~2 years. */
+export async function categoryTrend(
+  nodeId: string,
+  trendIndex = "SalesCount",
+  site = "US",
+): Promise<TrendPoint[]> {
+  if (!nodeId) return [];
+  const t = await callTool("category_trend", { nodeId, trendIndex, amzSite: site });
+  return parseYmSeries(typeof t === "string" ? t : JSON.stringify(t));
+}
+
+/** A product's own historical trend (default: monthly sales volume). */
+export async function productTrend(
+  asin: string,
+  productTrendType = "SalesVolume",
+  site = "US",
+): Promise<TrendPoint[]> {
+  const t = await callTool("product_trend", { asin, productTrendType, amzSite: site });
+  return parseYmSeries(typeof t === "string" ? t : JSON.stringify(t));
 }

@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { EbayReference } from "@/components/EbayReference";
-import { getEvaluationByAsin, getSeller, pnlInputsFor } from "@/lib/queries";
+import { MarketInsightCard } from "@/components/MarketInsightCard";
+import {
+  getEvaluationByAsin,
+  getSeller,
+  getMarketInsight,
+  pnlInputsFor,
+} from "@/lib/queries";
 import { acosSafety, computePnl, computeScenarios } from "@/lib/economics";
 import { DIMENSION_LABELS, WEIGHTS_BY_EXPERIENCE } from "@/lib/scoring";
 import { STATUS_META } from "@/lib/types";
@@ -24,6 +30,7 @@ export default async function ReportPage({
   const e = await getEvaluationByAsin(asin);
   const seller = await getSeller();
   if (!e || !seller) notFound();
+  const marketInsight = await getMarketInsight(seller.id, e.asin);
 
   const base = pnlInputsFor(e);
   const pnl = computePnl(base);
@@ -98,6 +105,9 @@ export default async function ReportPage({
           </table>
         </div>
       </div>
+
+      {/* market capacity & trend */}
+      {marketInsight ? <MarketInsightCard mi={marketInsight} /> : null}
 
       {/* cross-platform reference */}
       <EbayReference query={e.main_keyword || e.name} amazonPrice={e.price_usd} />

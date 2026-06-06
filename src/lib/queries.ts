@@ -1,5 +1,7 @@
 import { query, queryOne } from "./db";
 import type { ReviewInsight, ReviewPainPoint } from "./reviews";
+import type { MarketInsight } from "./market";
+import type { TrendPoint } from "./sorftime";
 import type {
   Evaluation,
   EvaluationStatus,
@@ -200,6 +202,55 @@ export async function getReviewInsight(
     avgStar: Number(row.avg_star),
     negRatioPct: Number(row.neg_ratio_pct),
     painPoints: row.pain_points ?? [],
+  };
+}
+
+interface MarketInsightRow {
+  node_id: string;
+  category_name: string;
+  tam_units: string;
+  tam_revenue_usd: string;
+  top3_product_share: string;
+  top3_brand_share: string;
+  top3_seller_share: string;
+  amazon_owned_share: string;
+  avg_price: string;
+  median_price: string;
+  high_reviews_share: string;
+  growth_yoy_pct: string;
+  peak_month: string;
+  category_trend: TrendPoint[];
+  product_trend: TrendPoint[];
+}
+
+/** Latest persisted market capacity / trend insight for an ASIN. */
+export async function getMarketInsight(
+  sellerId: number,
+  asin: string,
+): Promise<MarketInsight | null> {
+  const row = await queryOne<MarketInsightRow>(
+    `SELECT * FROM market_insights
+       WHERE seller_id = $1 AND asin = $2
+       ORDER BY fetched_at DESC LIMIT 1`,
+    [sellerId, asin],
+  );
+  if (!row) return null;
+  return {
+    nodeId: row.node_id,
+    categoryName: row.category_name,
+    tamUnits: Number(row.tam_units),
+    tamRevenueUsd: Number(row.tam_revenue_usd),
+    top3ProductShare: Number(row.top3_product_share),
+    top3BrandShare: Number(row.top3_brand_share),
+    top3SellerShare: Number(row.top3_seller_share),
+    amazonOwnedShare: Number(row.amazon_owned_share),
+    avgPrice: Number(row.avg_price),
+    medianPrice: Number(row.median_price),
+    highReviewsShare: Number(row.high_reviews_share),
+    growthYoyPct: Number(row.growth_yoy_pct),
+    peakMonth: row.peak_month,
+    categoryTrend: row.category_trend ?? [],
+    productTrend: row.product_trend ?? [],
   };
 }
 
